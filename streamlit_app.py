@@ -62,18 +62,18 @@ uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 # List of encodings to try
 encodings = ["utf-8", "ISO-8859-1", "utf-16"]
 
-if uploaded_file is not None:
+def load_csv(uploaded_file, encodings):
     for encoding in encodings:
         try:
-            # Attempt to read the CSV file with the current encoding
-            # Streamlit's uploader returns a file-like object which we can read directly
-            df = pd.read_csv(uploaded_file, encoding=encoding)
-            st.write(f"### Data Preview (Encoding: {encoding})")
-            st.write(df)
-            break
-        except UnicodeDecodeError:
-            if encoding == encodings[-1]:
-                st.error("Could not decode the file with any of the tried encodings. Please ensure it is encoded in UTF-8 or choose a different file.")
-        except Exception as e:
-            st.error(f"An unexpected error occurred with encoding '{encoding}': {e}")
-            break
+            return pd.read_csv(uploaded_file, encoding=encoding), encoding
+        except (UnicodeDecodeError, pd.errors.ParserError):
+            continue
+    return None, None
+
+if uploaded_file is not None:
+    df, encoding = load_csv(uploaded_file, encodings)
+    if df is not None:
+        st.write(f"### Data Preview (Encoding: {encoding})")
+        st.write(df)
+    else:
+        st.error("Could not decode the file with any of the tried encodings. Please ensure it is encoded in UTF-8 or choose a different file.")
