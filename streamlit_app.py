@@ -72,7 +72,7 @@ encodings = ["utf-8", "ISO-8859-1", "utf-16"]
 
 def load_csv_from_github(url, encodings):
     for encoding in encodings:
-        try {
+        try:
             st.write(f"Trying to fetch the file from URL: {url} with encoding: {encoding}")
             response = requests.get(url)
             if response.status_code == 200:
