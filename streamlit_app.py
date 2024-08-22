@@ -1,6 +1,6 @@
 import streamlit as st
-from openai import OpenAI
 import pandas as pd
+from openai import OpenAI
 
 # Show title and description.
 st.title("💬 Chatbot")
@@ -34,7 +34,6 @@ else:
     # Create a chat input field to allow the user to enter a message. This will display
     # automatically at the bottom of the page.
     if prompt := st.chat_input("What is up?"):
-
         # Store and display the current prompt.
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -59,13 +58,21 @@ else:
 # File uploader for CSV files
 st.write("## Upload a CSV file")
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+# List of encodings to try
+encodings = ["utf-8", "ISO-8859-1", "utf-16"]
+
 if uploaded_file is not None:
-    try:
-        # Attempt to read the CSV file
-        df = pd.read_csv(uploaded_file)
-        st.write("### Data Preview")
-        st.write(df)
-    except UnicodeDecodeError:
-        st.error("There was an error decoding the file. Please ensure the file is encoded in UTF-8 or choose a different file.")
-    except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
+    for encoding in encodings:
+        try:
+            # Attempt to read the CSV file with the current encoding
+            df = pd.read_csv(uploaded_file, encoding=encoding)
+            st.write(f"### Data Preview (Encoding: {encoding})")
+            st.write(df)
+            break
+        except UnicodeDecodeError:
+            if encoding == encodings[-1]:
+                st.error("Could not decode the file with any of the tried encodings. Please ensure it is encoded in UTF-8 or choose a different file.")
+        except Exception as e:
+            st.error(f"An unexpected error occurred with encoding '{encoding}': {e}")
+            break
