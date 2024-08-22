@@ -26,12 +26,12 @@ else:
     # messages persist across reruns.
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
+    
     # Display the existing chat messages via `st.chat_message`.
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
+    
     # Create a chat input field to allow the user to enter a message. This will display
     # automatically at the bottom of the page.
     if prompt := st.chat_input("What is up?"):
@@ -39,7 +39,7 @@ else:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-
+    
         # Define function to handle answering questions based on DataFrame
         def answer_question(prompt, df):
             # Simple example: search the DataFrame for the user's query
@@ -52,14 +52,14 @@ else:
                     return "No matching results found."
             else:
                 return "Data not loaded."
-
+    
         # Generate a response using the DataFrame content
         df, encoding = st.session_state.get('df', (None, None))
         if df is not None:
             response_content = answer_question(prompt, df)
         else:
             response_content = "CSV file not loaded properly."
-
+    
         # Store and display the response
         with st.chat_message("assistant"):
             if isinstance(response_content, pd.DataFrame):
