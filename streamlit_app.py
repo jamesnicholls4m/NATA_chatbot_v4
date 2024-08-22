@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+import pandas as pd
 
 # Show title and description.
 st.title("💬 Chatbot")
@@ -54,3 +55,12 @@ else:
         with st.chat_message("assistant"):
             response = st.write_stream(stream)
         st.session_state.messages.append({"role": "assistant", "content": response})
+
+# File uploader for CSV files
+st.write("## Upload a CSV file")
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+if uploaded_file is not None:
+    # Read the CSV file
+    df = pd.read_csv(uploaded_file)
+    st.write("### Data Preview")
+    st.write(df)
