@@ -1,71 +1,47 @@
+import streamlit as st
 import pandas as pd
 import openai
-from tkinter import Tk, filedialog
 
-def load_excel_file():
-    """Prompt user to upload an Excel file and load it."""
-    root = Tk()
-    root.withdraw()  # Close the root window
-    file_path = filedialog.askopenfilename(title="Select Excel File", filetypes=[("Excel files", "*.xlsx *.xls")])
-    if not file_path:
-        raise ValueError("No file selected.")
-    
-    xls = pd.ExcelFile(file_path)
-    return xls
+# Set up the OpenAI API key
+openai_api_key = st.sidebar.text_input("Enter your OpenAI API key:", type="password")
 
-def ask_question_to_gpt(api_key, question):
-    """Ask a question to OpenAI GPT model and get the response."""
-    openai.api_key = api_key
-    
-    response = openai.Completion.create(
-      model="text-davinci-003",
-      prompt=question,
-      max_tokens=150
-    )
-    
-    return response.choices[0].text.strip()
+# File upload
+uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx", "xls"])
 
-def search_excel_for_answer(xls, sheet_name, question):
-    """Search the Excel file based on the GPT-3's interpretation of the question."""
+if uploaded_file is not None:
+    xls = pd.ExcelFile(uploaded_file)
+    
+    # Display available sheets
+    sheet_names = xls.sheet_names
+    sheet_name = st.selectbox("Select the sheet to analyze:", sheet_names)
+    
+    # Load the selected sheet
     data = pd.read_excel(xls, sheet_name=sheet_name)
+    st.write("Data Preview:")
+    st.write(data.head())
     
-    # Simplified example: filter based on a keyword extracted from the question
-    if 'ISO 15189' in question:
-        relevant_data = data[(data['Standard'] == 'ISO 15189') & (~data['QLD\n07 3721 7300 WA\n08 9486 2800'].isnull())]
-        qld_contacts = relevant_data['QLD\n07 3721 7300 WA\n08 9486 2800'].unique()
-        return {
-            "contacts": qld_contacts.tolist(),
-            "phone_number": "+61 7 3721 7300"
-        }
-    else:
-        return "No relevant data found for your question."
-
-def main():
-    print("Welcome to the Excel Search Application!")
+    # Enter your question
+    question = st.text_input("Ask a question about the data:")
     
-    # Step 1: User inputs their OpenAI API key
-    api_key = input("Please enter your OpenAI API key: ").strip()
-    
-    # Step 2: User uploads an Excel file
-    try:
-        xls = load_excel_file()
-    except ValueError as e:
-        print(e)
-        return
-    
-    # Step 3: User enters their question
-    question = input("Please enter your question: ").strip()
-    
-    # Step 4: Application asks the question to GPT
-    gpt_answer = ask_question_to_gpt(api_key, question)
-    print(f"GPT's Interpretation: {gpt_answer}")
-    
-    # Step 5: Search the Excel file based on the GPT interpretation
-    try:
-        result = search_excel_for_answer(xls, sheet_name='Staff List for ICT', question=gpt_answer)
-        print("Search Results:", result)
-    except Exception as e:
-        print(f"Error during search: {e}")
-
-if __name__ == "__main__":
-    main()
+    if st.button("Search"):
+        if not openai_api_key:
+            st.error("Please enter your OpenAI API key.")
+        else:
+            # Ask GPT for interpretation
+            openai.api_key = openai_api_key
+            response = openai.Completion.create(
+                model="text-davinci-003",
+                prompt=question,
+                max_tokens=150
+            )
+            gpt_answer = response.choices[0].text.strip()
+            st.write("GPT's Interpretation:", gpt_answer)
+            
+            # Search the Excel file based on the GPT's interpretation
+            if 'ISO 15189' in gpt_answer:
+                relevant_data = data[(data['Standard'] == 'ISO 15189') & (~data['QLD\n07 3721 7300 WA\n08 9486 2800'].isnull())]
+                qld_contacts = relevant_data['QLD\n07 3721 7300 WA\n08 9486 2800'].unique()
+                st.write("Contacts:", qld_contacts)
+                st.write("Phone Number: +61 7 3721 7300")
+            else:
+                st.write("No relevant data found for your question.")
