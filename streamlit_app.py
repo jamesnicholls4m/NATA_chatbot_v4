@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import requests
+from io import StringIO
 from openai import OpenAI
 
 # Show title and description.
@@ -55,25 +57,30 @@ else:
             response = st.write_stream(stream)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-# File uploader for CSV files
-st.write("## Upload a CSV file")
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+# File location in the GitHub repository
+GITHUB_URL = "https://raw.githubusercontent.com/jamesnicholls4m/NATA_chatbot_v4/main/NATA%20A2Z%20List%20-%20August%202024%20-%20v1.csv"
 
 # List of encodings to try
 encodings = ["utf-8", "ISO-8859-1", "utf-16"]
 
-if uploaded_file is not None:
+def load_csv_from_github(url, encodings):
     for encoding in encodings:
         try:
-            # Use the uploaded file that is a file-like object correctly
-            uploaded_file.seek(0)  # Reset file pointer to the start
-            df = pd.read_csv(uploaded_file, encoding=encoding)
-            st.write(f"### Data Preview (Encoding: {encoding})")
-            st.write(df)
-            break
-        except UnicodeDecodeError:
-            if encoding == encodings[-1]:
-                st.error("Could not decode the file with any of the tried encodings. Please ensure it is encoded in UTF-8 or choose a different file.")
-        except Exception as e:
-            st.error(f"An unexpected error occurred with encoding '{encoding}': {e}")
-            break
+            response = requests.get(url)
+            response.raise_for_status()  # Check that the request was successful
+            csv_content = response.content.decode(encoding)
+            return pd.read_csv(StringIO(csv_content)), encoding
+        except (UnicodeDecodeError, pd.errors.ParserError):
+            continue
+        except requests.RequestException as e:
+            st.error(f"Failed to retrieve the file: {e}")
+            return None, None
+    return None, None
+
+st.write("## Attempting to load the CSV file from the GitHub repository")
+df, encoding = load_csv_from_github(GITHUB_URL, encodings)
+if df is not None:
+    st.write(f"### Data Preview (Encoding: {encoding})")
+    st.write(df)
+else:
+    st.error("Could not decode the file with any of the tried encodings. Please ensure it is encoded in UTF-8 or verify the file exists in the repository.")
