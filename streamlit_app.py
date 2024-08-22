@@ -63,13 +63,18 @@ GITHUB_URL = "https://raw.githubusercontent.com/jamesnicholls4m/NATA_chatbot_v4/
 # List of encodings to try
 encodings = ["utf-8", "ISO-8859-1", "utf-16"]
 
+# Debug URL and response
 def load_csv_from_github(url, encodings):
     for encoding in encodings:
         try:
+            st.write(f"Trying to fetch the file from URL: {url} with encoding: {encoding}")
             response = requests.get(url)
-            response.raise_for_status()  # Check that the request was successful
-            csv_content = response.content.decode(encoding)
-            return pd.read_csv(StringIO(csv_content)), encoding
+            if response.status_code == 200:
+                csv_content = response.content.decode(encoding)
+                return pd.read_csv(StringIO(csv_content)), encoding
+            else:
+                st.error(f"Failed to retrieve the file: {response.status_code} {response.reason}")
+                return None, None
         except (UnicodeDecodeError, pd.errors.ParserError):
             continue
         except requests.RequestException as e:
