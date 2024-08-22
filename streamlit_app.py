@@ -19,7 +19,6 @@ openai_api_key = st.text_input("OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
-
     # Create an OpenAI client.
     client = OpenAI(api_key=openai_api_key)
 
@@ -41,21 +40,29 @@ else:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+        # Define function to handle answering questions based on DataFrame
+        def answer_question(prompt, df):
+            # Simple example: search the DataFrame for the user's query
+            if df is not None:
+                search_results = df[df.apply(lambda row: row.astype(str).str.contains(prompt, case=False).any(), axis=1)]
+                if not search_results.empty:
+                    return search_results.to_string(index=False)
+                else:
+                    return "No matching results found."
+            else:
+                return "Data not loaded."
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
+        # Generate a response using the DataFrame content and OpenAI API if needed
+        df, encoding = st.session_state.get('df', (None, None))
+        if df is not None:
+            response_content = answer_question(prompt, df)
+        else:
+            response_content = "CSV file not loaded properly."
+
+        # Store and display the response
         with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            st.markdown(response_content)
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
 
 # File location in the GitHub repository
 GITHUB_URL = "https://raw.githubusercontent.com/jamesnicholls4m/NATA_chatbot_v4/main/NATA%20A2Z%20List%20-%20August%202024%20-%20v1.csv"
@@ -63,10 +70,9 @@ GITHUB_URL = "https://raw.githubusercontent.com/jamesnicholls4m/NATA_chatbot_v4/
 # List of encodings to try
 encodings = ["utf-8", "ISO-8859-1", "utf-16"]
 
-# Debug URL and response
 def load_csv_from_github(url, encodings):
     for encoding in encodings:
-        try:
+        try {
             st.write(f"Trying to fetch the file from URL: {url} with encoding: {encoding}")
             response = requests.get(url)
             if response.status_code == 200:
@@ -85,6 +91,7 @@ def load_csv_from_github(url, encodings):
 st.write("## Attempting to load the CSV file from the GitHub repository")
 df, encoding = load_csv_from_github(GITHUB_URL, encodings)
 if df is not None:
+    st.session_state['df'] = (df, encoding)
     st.write(f"### Data Preview (Encoding: {encoding})")
     st.write(df)
 else:
