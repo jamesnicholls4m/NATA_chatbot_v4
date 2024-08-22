@@ -60,7 +60,12 @@ else:
 st.write("## Upload a CSV file")
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 if uploaded_file is not None:
-    # Read the CSV file
-    df = pd.read_csv(uploaded_file)
-    st.write("### Data Preview")
-    st.write(df)
+    try:
+        # Attempt to read the CSV file
+        df = pd.read_csv(uploaded_file)
+        st.write("### Data Preview")
+        st.write(df)
+    except UnicodeDecodeError:
+        st.error("There was an error decoding the file. Please ensure the file is encoded in UTF-8 or choose a different file.")
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
