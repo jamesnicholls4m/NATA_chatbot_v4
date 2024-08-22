@@ -44,15 +44,16 @@ else:
         def answer_question(prompt, df):
             # Simple example: search the DataFrame for the user's query
             if df is not None:
+                st.write("Searching for:", prompt)
                 search_results = df[df.apply(lambda row: row.astype(str).str.contains(prompt, case=False).any(), axis=1)]
                 if not search_results.empty:
-                    return search_results.to_string(index=False)
+                    return search_results
                 else:
                     return "No matching results found."
             else:
                 return "Data not loaded."
 
-        # Generate a response using the DataFrame content and OpenAI API if needed
+        # Generate a response using the DataFrame content
         df, encoding = st.session_state.get('df', (None, None))
         if df is not None:
             response_content = answer_question(prompt, df)
@@ -61,8 +62,13 @@ else:
 
         # Store and display the response
         with st.chat_message("assistant"):
-            st.markdown(response_content)
-        st.session_state.messages.append({"role": "assistant", "content": response_content})
+            if isinstance(response_content, pd.DataFrame):
+                st.write(response_content)
+                response_string = response_content.to_string(index=False)
+            else:
+                response_string = response_content
+                st.markdown(response_string)
+        st.session_state.messages.append({"role": "assistant", "content": response_string})
 
 # File location in the GitHub repository
 GITHUB_URL = "https://raw.githubusercontent.com/jamesnicholls4m/NATA_chatbot_v4/main/NATA%20A2Z%20List%20-%20August%202024%20-%20v1.csv"
