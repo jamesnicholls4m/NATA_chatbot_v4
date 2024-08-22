@@ -4,7 +4,7 @@ import requests
 from io import StringIO
 from openai import OpenAI
 
-# Show title and description.
+# Show title and description
 st.title("💬 Chatbot")
 st.write(
     "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
@@ -12,54 +12,52 @@ st.write(
     "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
 )
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
+# Asks for user OpenAI API key via `st.text_input`
 openai_api_key = st.text_input("OpenAI API Key", type="password")
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
-    # Create an OpenAI client.
+    # Create an OpenAI client
     client = OpenAI(api_key=openai_api_key)
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
+    # Create a session state variable to store the chat messages
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    
-    # Display the existing chat messages via `st.chat_message`.
+
+    # Display the existing chat messages via `st.chat_message`
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
+
+    # Create a chat input field to allow the user to enter a message
     if prompt := st.chat_input("What is up?"):
-        # Store and display the current prompt.
+        # Store and display the current prompt
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-    
+
         # Define function to handle answering questions based on DataFrame
         def answer_question(prompt, df):
-            # Simple example: search the DataFrame for the user's query
             if df is not None:
-                st.write("Searching for:", prompt)
+                st.write("Debug: DataFrame Loaded Successfully")
+                st.write(df.head())  # Display first few rows of DataFrame for verification
                 search_results = df[df.apply(lambda row: row.astype(str).str.contains(prompt, case=False).any(), axis=1)]
+                st.write(f"Debug: Search results for '{prompt}'")
+                st.write(search_results)  # Display search results for debugging
                 if not search_results.empty:
                     return search_results
                 else:
                     return "No matching results found."
             else:
                 return "Data not loaded."
-    
+
         # Generate a response using the DataFrame content
         df, encoding = st.session_state.get('df', (None, None))
         if df is not None:
             response_content = answer_question(prompt, df)
         else:
             response_content = "CSV file not loaded properly."
-    
+
         # Store and display the response
         with st.chat_message("assistant"):
             if isinstance(response_content, pd.DataFrame):
@@ -99,6 +97,6 @@ df, encoding = load_csv_from_github(GITHUB_URL, encodings)
 if df is not None:
     st.session_state['df'] = (df, encoding)
     st.write(f"### Data Preview (Encoding: {encoding})")
-    st.write(df)
+    st.write(df.head())  # Show the first few rows to verify the DataFrame content
 else:
     st.error("Could not decode the file with any of the tried encodings. Please ensure it is encoded in UTF-8 or verify the file exists in the repository.")
