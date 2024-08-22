@@ -66,6 +66,7 @@ if uploaded_file is not None:
     for encoding in encodings:
         try:
             # Attempt to read the CSV file with the current encoding
+            # Streamlit's uploader returns a file-like object which we can read directly
             df = pd.read_csv(uploaded_file, encoding=encoding)
             st.write(f"### Data Preview (Encoding: {encoding})")
             st.write(df)
